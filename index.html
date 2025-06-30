@@ -4,9 +4,11 @@
     <title>pdfMake CDN Example</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   </head>
   <body>
-    <button onclick="generatePDF()">Download PDF</button>
+    <canvas id="pdf-preview" width="300"></canvas>
+    <button onclick="generatePDF()">Preview PDF</button>
     <script>
       // const invoiceData = {{ invoice|safe|json_script:"invoice-data" }};
     </script>
@@ -512,7 +514,39 @@
           },
         };
 
-        pdfMake.createPdf(docDefinition).download("example.pdf");
+        // // pdfMake.createPdf(docDefinition).download("example.pdf");
+        // pdfMake.createPdf(docDefinition).getDataUrl(function (dataUrl) {
+        //   const img = document.createElement("img");
+        //   img.src = dataUrl; // base64-encoded preview
+        //   document.body.appendChild(img); // Appends preview to the page
+        // });
+
+        pdfMake.createPdf(docDefinition).getBlob((blob) => {
+          const fileReader = new FileReader();
+
+          fileReader.onload = function () {
+            const typedArray = new Uint8Array(this.result);
+
+            pdfjsLib.getDocument({ data: typedArray }).promise.then((pdf) => {
+              pdf.getPage(1).then((page) => {
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale });
+                const canvas = document.getElementById("pdf-preview");
+                const context = canvas.getContext("2d");
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                  canvasContext: context,
+                  viewport: viewport,
+                };
+                page.render(renderContext);
+              });
+            });
+          };
+
+          fileReader.readAsArrayBuffer(blob);
+        });
       }
     </script>
     <script>
