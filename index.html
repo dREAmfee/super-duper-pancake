@@ -7,8 +7,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   </head>
   <body>
-    <canvas id="pdf-preview" width="300"></canvas>
+    <!-- <canvas id="pdf-preview" width="300"></canvas> -->
+    <div id="pdf-container"></div>
     <button onclick="generatePDF()">Preview PDF</button>
+
     <script>
       // const invoiceData = {{ invoice|safe|json_script:"invoice-data" }};
     </script>
@@ -514,13 +516,6 @@
           },
         };
 
-        // // pdfMake.createPdf(docDefinition).download("example.pdf");
-        // pdfMake.createPdf(docDefinition).getDataUrl(function (dataUrl) {
-        //   const img = document.createElement("img");
-        //   img.src = dataUrl; // base64-encoded preview
-        //   document.body.appendChild(img); // Appends preview to the page
-        // });
-
         pdfMake.createPdf(docDefinition).getBlob((blob) => {
           const fileReader = new FileReader();
 
@@ -528,20 +523,30 @@
             const typedArray = new Uint8Array(this.result);
 
             pdfjsLib.getDocument({ data: typedArray }).promise.then((pdf) => {
-              pdf.getPage(1).then((page) => {
-                const scale = 1.5;
-                const viewport = page.getViewport({ scale });
-                const canvas = document.getElementById("pdf-preview");
-                const context = canvas.getContext("2d");
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+              const numPages = pdf.numPages;
+              const scale = 1.5;
 
-                const renderContext = {
-                  canvasContext: context,
-                  viewport: viewport,
-                };
-                page.render(renderContext);
-              });
+              for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                pdf.getPage(pageNum).then((page) => {
+                  const viewport = page.getViewport({ scale });
+                  const canvas = document.createElement("canvas");
+                  const context = canvas.getContext("2d");
+
+                  canvas.width = viewport.width;
+                  canvas.height = viewport.height;
+
+                  canvas.style.marginBottom = "20px"; // space between pages
+                  canvas.style.border = "1px solid #ccc";
+
+                  const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport,
+                  };
+
+                  page.render(renderContext);
+                  document.getElementById("pdf-container").appendChild(canvas);
+                });
+              }
             });
           };
 
