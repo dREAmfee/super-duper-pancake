@@ -1495,6 +1495,10 @@
 
         pdfMake.createPdf(docDefinition).open();
       }
+
+      window.addEventListener("load", function () {
+        generatePDF(); // This ensures all code is initialized before being called
+      });
     </script>
     <script>
       var bg =
